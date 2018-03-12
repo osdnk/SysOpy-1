@@ -1,6 +1,6 @@
 #include "lib1.h"
 
-char staticArray[1000][1000];
+char staticArray[600000][1000];
 
 Table *create_table(unsigned int height, unsigned int width, bool is_static)
 {

@@ -16,7 +16,7 @@ typedef struct Table
     bool is_static;
 } Table;
 
-extern char staticArray[1000][1000];
+extern char staticArray[600000][1000];
 
 Table* create_table(unsigned int height, unsigned int width, bool is_static);
 void delete_table(Table **table);
