@@ -106,3 +106,9 @@ REMOVING AND ADDING BLOCKS
 REAL: 0.390000l  USER: 0.380000l  SYSTEM: 0.010000l
 REMOVING AND ADDING BLOCKS
 REAL: 0.350000l  USER: 0.330000l  SYSTEM: 0.010000l
+
+
+WNIOSKI:
+-tablice statycznie alokowane są szybsze
+-szybkość wykonania static<shared<dynamic
+-największe różnice przy alokacji pamięci
