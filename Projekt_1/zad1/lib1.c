@@ -1,6 +1,5 @@
 #include "lib1.h"
 
-
 char staticArray[HEIGHT][WIDTH];
 
 Table *create_table(unsigned int height, unsigned int width, bool is_static)
