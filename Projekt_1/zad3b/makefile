@@ -1,6 +1,7 @@
 CC = gcc -Wall
-LIB_NAME = lib
+LIB_NAME = lib1
 MAIN_SRC = main
+optim = 0
 
 compile: static shared dynamic
 
@@ -42,16 +43,28 @@ clean_all: clean
 	rm -f $(MAIN_SRC)_static
 
 test: compile
-	./$(MAIN_SRC)_static 500000 500 dynamic f 100 ar 100000
-	./$(MAIN_SRC)_static 500000 500 static f 100 ar 100000
-	./$(MAIN_SRC)_shared 500000 500 dynamic f 100 ar 100000
-	./$(MAIN_SRC)_shared 500000 500 static f 100 ar 100000
-	./$(MAIN_SRC)_dynamic 500000 500 dynamic f 100 ar 100000
-	./$(MAIN_SRC)_dynamic 500000 500 static f 100 ar 100000
-	./$(MAIN_SRC)_static 100000 500 dynamic ar 10000 arc 10000
-	./$(MAIN_SRC)_static 100000 500 static ar 10000 arc 10000
-	./$(MAIN_SRC)_shared 100000 500 dynamic ar 10000 arc 10000
-	./$(MAIN_SRC)_shared 100000 500 static ar 10000 arc 10000
-	./$(MAIN_SRC)_dynamic 100000 500 dynamic ar 10000 arc 10000
-	./$(MAIN_SRC)_dynamic 100000 500 static ar 10000 arc 10000
-make clean_all
+	echo >> raport3b.txt
+	echo STATIC LIB ADD_REMOVE -O$(optim) >> raport3b.txt
+	./$(MAIN_SRC)_static 500000 500 dynamic c f 10000 ar 100000
+	./$(MAIN_SRC)_static 500000 500 static c f 10000 ar 100000
+	echo >> raport3b.txt
+	echo SHARED LIB ADD_REMOVE -O$(optim) >> raport3b.txt
+	./$(MAIN_SRC)_shared 500000 500 dynamic c f 10000 ar 100000
+	./$(MAIN_SRC)_shared 500000 500 static c f 10000 ar 100000
+	echo >> raport3b.txt
+	echo DYNAMIC LIB ADD_REMOVE -O$(optim) >> raport3b.txt
+	./$(MAIN_SRC)_dynamic 500000 500 dynamic c f 10000 ar 100000
+	./$(MAIN_SRC)_dynamic 500000 500 static c f 10000 ar 100000
+	echo >> raport3b.txt
+	echo STATIC LIB ADD_REMOVE_CROSS -O$(optim) >> raport3b.txt
+	./$(MAIN_SRC)_static 500000 500 dynamic c ar 100000 arc 100000
+	./$(MAIN_SRC)_static 500000 500 static c ar 100000 arc 100000
+	echo >> raport3b.txt
+	echo SHARED LIB ADD_REMOVE_CROSS -O$(optim) >> raport3b.txt
+	./$(MAIN_SRC)_shared 500000 500 dynamic c ar 100000 arc 100000
+	./$(MAIN_SRC)_shared 500000 500 static c ar 100000 arc 100000
+	echo >> raport3b.txt
+	echo DYNAMIC LIB ADD_REMOVE_CROSS -O$(optim) >> raport3b.txt
+	./$(MAIN_SRC)_dynamic 500000 500 dynamic c ar 100000 arc 100000
+	./$(MAIN_SRC)_dynamic 500000 500 static c ar 100000 arc 100000
+	make clean_all

@@ -14,21 +14,20 @@ void print_times(clock_t real_start, struct tms *time_start, clock_t real_end, s
 
 #ifdef DYNAMIC
 
-void add_remove_blocks(int count, Table *tab, void (*delete_block)(unsigned int, Table *), void (*create_block)(Table *, char *))
+void add_remove_blocks(int count, Table *tab, void (*delete_block)(unsigned int, Table *), void (*create_block)(unsigned int, Table *, char *))
 {
     for (int i = 0; i < count; i++)
-        (*create_block)(tab, create_value(tab->width));
-
+        (*delete_block)(i, tab);
     for (int i = 0; i < count; i++)
-        (*delete_block)(rand() % tab->current_last, tab);
+        (*create_block)(i, tab, create_value(tab->width));
 }
 
-void add_remove_blocks_cross(int count, Table *tab, void (*delete_block)(unsigned int, Table *), void (*create_block)(Table *, char *))
+void add_remove_blocks_cross(int count, Table *tab, void (*delete_block)(unsigned int, Table *), void (*create_block)(unsigned int, Table *, char *))
 {
     for (int i = 0; i < count; i++)
     {
-        (*create_block)(tab, create_value(tab->width));
         (*delete_block)(rand() % tab->height, tab);
+        (*create_block)(i, tab, create_value(tab->width));
     }
 }
 
@@ -50,9 +49,9 @@ int main(int argc, char **argv)
     handle = dlopen("./liblib1.so", RTLD_LAZY);
     Table *(*create_table)(unsigned int, unsigned int, bool) = dlsym(handle, "create_table");
     void (*delete_block)(unsigned int, Table *) = dlsym(handle, "delete_block");
-    void (*create_block)(Table *, char *) = dlsym(handle, "create_block");
+    void (*create_block)(unsigned int, Table *, char *) = dlsym(handle, "create_block");
     char *(*find_block)(unsigned int, Table *) = dlsym(handle, "find_block");
-    void (*delete_table)(Table **) = dlsym(handle, "delete_table");
+    void (*delete_table)(Table *) = dlsym(handle, "delete_table");
 
 #endif
 
@@ -64,7 +63,7 @@ int main(int argc, char **argv)
 
     char **messages = calloc(MAX_OPS, sizeof(char *));
     for (int i = 0; i < MAX_OPS; i++)
-        messages[i] = calloc(15, sizeof(char));
+        messages[i] = calloc(MAX_OPS * 2 + 1, sizeof(char));
 
     int current_time = 0;
     int curretn_message = 0;
@@ -98,8 +97,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    printf("ARRAY_SIZE: %d BLOCK_SIZE %d ALLOCATION %s", arr_size, block_size, argv[3]);
-    fprintf(fp, "ARRAY_SIZE: %d BLOCK_SIZE %d ALLOCATION %s", arr_size, block_size, argv[3]);
+    printf("\nARRAY_SIZE: %d BLOCK_SIZE %d ALLOCATION %s\n", arr_size, block_size, argv[3]);
+    fprintf(fp, "\nARRAY_SIZE: %d BLOCK_SIZE %d ALLOCATION %s\n", arr_size, block_size, argv[3]);
 
     Table *table;
 
@@ -114,7 +113,7 @@ int main(int argc, char **argv)
         table = create_table(arr_size, block_size, is_static);
 
         for (int i = 0; i < table->height / 2; i++)
-            create_block(table, create_value(table->width));
+            create_block(i, table, create_value(table->width));
 
         time_arr[current_time] = times(tms_arr[current_time]);
         current_time += 1;
@@ -135,17 +134,18 @@ int main(int argc, char **argv)
         {
             strcpy(messages[curretn_message], "LOOKING FOR BLOCK");
             curretn_message += 2;
-            if (table->current_last > 0)
+            if (table->current_size > 0)
             {
-                int count;
+                int count = 0;
 
                 if (i + 1 < argc)
                 {
                     i += 1;
                     count = atoi(argv[i]);
                 }
+
                 for (int i = 0; i < count; i++)
-                    find_block(rand() % table->current_last, table);
+                    find_block(rand() % table->current_size, table);
             }
         }
         else if (strcmp(argv[i], "ar") == 0)
@@ -164,12 +164,7 @@ int main(int argc, char **argv)
             }
             if (count > table->height)
             {
-                printf("invalid index");
-                exit(EXIT_FAILURE);
-            }
-            if (table->height - table->current_last < count)
-            {
-                printf("invalid index");
+                printf("invalid index(ar): %d", count);
                 exit(EXIT_FAILURE);
             }
 
@@ -202,15 +197,12 @@ int main(int argc, char **argv)
             }
             if (count > table->height)
             {
-                printf("invalid index");
+                printf("invalid index(ar): %d", count);
                 exit(EXIT_FAILURE);
             }
-            if (table->height - table->current_last < count)
-            {
-                printf("invalid index");
-                exit(EXIT_FAILURE);
-            }
-            strcpy(messages[curretn_message], "CROSS REMOVING AND ADDING BLOCKS");
+
+            strcpy(messages[curretn_message], "REMOVING AND ADDING BLOCKS");
+            curretn_message += 2;
 
 #ifdef DYNAMIC
 
@@ -219,37 +211,42 @@ int main(int argc, char **argv)
 
 #ifndef DYNAMIC
 
-            add_remove_blocks(count, table);
+            add_remove_blocks_cross(count, table);
 #endif
         }
         else
         {
-            printf("invalid parameter %s", argv[i]);
+            printf("invalid parameter %s\n", argv[i]);
             exit(EXIT_FAILURE);
         }
 
         time_arr[current_time] = times(tms_arr[current_time]);
         current_time += 1;
     }
+#ifndef DYNAMIC
+    delete_table(table);
+#endif
 
-    delete_table(&table);
-
+#ifdef DYNAMIC
+    (*delete_table)(table);
+#endif
     for (int i = 0; i < MAX_OPS; i += 2)
         print_times(time_arr[i], tms_arr[i], time_arr[i + 1], tms_arr[i + 1], messages[i], fp);
 
+    fclose(fp);
     return 0;
 }
 
 void print_times(clock_t real_start, struct tms *time_start, clock_t real_end, struct tms *time_end, char *message, FILE *fp)
 {
     printf("%s\n", message);
-    printf("REAL: %fl\n", time_diff(real_start, real_end));
-    printf("USER: %fl\n", time_diff(time_start->tms_utime, time_end->tms_utime));
+    printf("REAL: %fl   ", time_diff(real_start, real_end));
+    printf("USER: %fl   ", time_diff(time_start->tms_utime, time_end->tms_utime));
     printf("SYSTEM: %fl\n", time_diff(time_start->tms_stime, time_end->tms_stime));
 
     fprintf(fp, "%s\n", message);
-    fprintf(fp, "REAL: %fl\n", time_diff(real_start, real_end));
-    fprintf(fp, "USER: %fl\n", time_diff(time_start->tms_utime, time_end->tms_utime));
+    fprintf(fp, "REAL: %fl  ", time_diff(real_start, real_end));
+    fprintf(fp, "USER: %fl  ", time_diff(time_start->tms_utime, time_end->tms_utime));
     fprintf(fp, "SYSTEM: %fl\n", time_diff(time_start->tms_stime, time_end->tms_stime));
 }
 
@@ -261,7 +258,7 @@ double time_diff(clock_t t1, clock_t t2)
 char *create_value(int max_size)
 {
     int size = rand() % max_size;
-    char *valuee = calloc(max_size, sizeof(char));
+    char *valuee = calloc(size, sizeof(char));
     char sub_vals[49] = "abcdefghijklmnopqrstuwyzABCDEFGHIJKLMNOPQRSTUWYZ";
     valuee[size - 1] = '\0';
     while (size > 1)
@@ -279,21 +276,20 @@ char *create_value(int max_size)
 
 #ifndef DYNAMIC
 
-void add_remove_blocks(int quantity, Table *tab)
+void add_remove_blocks(int count, Table *tab)
 {
-    for (int i = 0; i < quantity; i++)
-        create_block(tab, create_value(tab->width));
-
-    for (int i = 0; i < quantity; i++)
-        delete_block(rand() % tab->current_last, tab);
+    for (int i = 0; i < count; i++)
+        delete_block(i, tab);
+    for (int i = 0; i < count; i++)
+        create_block(i, tab, create_value(tab->width));
 }
 
-void add_remove_blocks_cross(int quantity, Table *tab)
+void add_remove_blocks_cross(int count, Table *tab)
 {
-    for (int i = 0; i < quantity; i++)
+    for (int i = 0; i < count; i++)
     {
-        create_block(tab, create_value(tab->width));
         delete_block(rand() % tab->height, tab);
+        create_block(i, tab, create_value(tab->width));
     }
 }
 
