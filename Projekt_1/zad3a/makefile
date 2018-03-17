@@ -6,7 +6,7 @@ compile: static shared dynamic
 
 static:
 	# kompilacja zrodla
-	$(CC) -c $(LIB_NAME).c -o $(LIB_NAME).o 
+	$(CC) -fPIC -c $(LIB_NAME).c -o $(LIB_NAME).o 
 
 	# zbuduj biblioteke statyczna .a
 	ar rcs lib$(LIB_NAME).a $(LIB_NAME).o 
