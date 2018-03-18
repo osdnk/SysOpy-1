@@ -12,8 +12,9 @@
 #include <limits.h>
 #include <ftw.h>
 #include <getopt.h>
+#include <limits.h>
 
-int const buff_size = 100;
+int const buff_size = PATH_MAX;
 
 time_t date;
 char *op;

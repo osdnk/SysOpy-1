@@ -12,7 +12,7 @@
 #include <limits.h>
 
 static const char default_format[] = "%b %d %H:%M";
-int const buff_size = 100;
+int const buff_size = PATH_MAX;
 
 int date_compare(time_t *date_1, time_t *date_2)
 {
