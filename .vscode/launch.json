@@ -9,7 +9,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/Projekt_2/zad2/main_1",
+            "program": "${workspaceRoot}/Projekt_2/zad2/main_2",
             "args": [".", "=", "Mar 17 17:46"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

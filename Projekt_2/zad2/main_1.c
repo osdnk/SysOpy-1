@@ -9,9 +9,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <string.h>
-#include <time.h>
 #include <limits.h>
-#include <string.h>
 
 static const char default_format[] = "%b %d %H:%M";
 int const buff_size = 100;
@@ -23,7 +21,7 @@ int date_compare(time_t *date_1, time_t *date_2)
     tm1 = localtime_r(date_1, tm1);
     tm2 = localtime_r(date_2, tm2);
 
-    return (
+    int res =
         tm1->tm_mon - tm2->tm_mon == 0
             ? (tm1->tm_mday - tm2->tm_mday == 0
                    ? (tm1->tm_hour - tm2->tm_hour == 0
@@ -32,7 +30,10 @@ int date_compare(time_t *date_1, time_t *date_2)
                                  : tm1->tm_min - tm2->tm_min)
                           : tm1->tm_hour - tm2->tm_hour)
                    : tm1->tm_mday - tm2->tm_mday)
-            : tm1->tm_mon - tm2->tm_mon);
+            : tm1->tm_mon - tm2->tm_mon;
+    free(tm1);
+    free(tm2);
+    return res;
 }
 
 void print_info(char *path, struct dirent *rdir, struct stat *file_stat, char *buffer, const char *format)
@@ -50,8 +51,8 @@ void print_info(char *path, struct dirent *rdir, struct stat *file_stat, char *b
 
     printf(" %ld\t", file_stat->st_nlink);
 
-    // printf(" %s\t", getpwuid(file_stat->st_uid)->pw_name);
-    // printf(" %s\t", getpwuid(file_stat->st_gid)->pw_name);
+    printf(" %s\t", getpwuid(file_stat->st_uid)->pw_name);
+    printf(" %s\t", getpwuid(file_stat->st_gid)->pw_name);
 
     printf(" %ld\t", file_stat->st_size);
 
@@ -70,9 +71,7 @@ void tree_rusher(char *path, char *op, time_t *date, const char *format, char *b
     DIR *dir = opendir(path);
 
     if (dir == NULL)
-    {
         return;
-    }
 
     struct dirent *rdir = readdir(dir);
     struct stat file_stat;
@@ -147,15 +146,6 @@ int main(int argc, char **argv)
     time_t date = mktime(tm);
     tm = localtime(&date);
 
-    // printf("tm_hour:  %d\n", tm->tm_hour);
-    // printf("tm_min:  %d\n", tm->tm_min);
-    // printf("tm_sec:  %d\n", tm->tm_sec);
-    // printf("tm_mon:  %d\n", tm->tm_mon);
-    // printf("tm_mday:  %d\n", tm->tm_mday);
-    // printf("tm_year:  %d\n", tm->tm_year);
-    // printf("tm_yday:  %d\n", tm->tm_yday);
-    // printf("tm_wday:  %d\n", tm->tm_wday);
-
     char buffer[buff_size];
 
     DIR *dir = opendir(start_path);
@@ -167,6 +157,7 @@ int main(int argc, char **argv)
 
     tree_rusher(realpath(start_path, buff), op, &date, format, buffer);
 
+    free(tm);
     closedir(dir);
     return 0;
 }

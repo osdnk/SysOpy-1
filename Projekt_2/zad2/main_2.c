@@ -1,114 +1,112 @@
-/* ch08-nftw.c --- demonstrate nftw() */
+#define _GNU_SOURCE 500
 
-#define _XOPEN_SOURCE 1          /* Required under GLIBC for nftw() */
-#define _XOPEN_SOURCE_EXTENDED 1 /* Same */
-
-#include <stdio.h>
-#include <errno.h>
-#include <getopt.h>
-#include <ftw.h>    /* gets <sys/types.h> and <sys/stat.h> for us */
-#include <limits.h> /* for PATH_MAX */
-#include <unistd.h> /* for getdtablesize(), getcwd() declarations */
+#include <time.h>
+#include <dirent.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <string.h>
+#include <limits.h>
+#include <ftw.h>
+#include <getopt.h>
 
-#define SPARE_FDS 5 /* fds for use by other functions, see text */
+int const buff_size = 100;
 
-extern int process(const char *file, const struct stat *sb,
-                   int flag, struct FTW *s);
+time_t date;
+char *op;
 
-/* usage --- print message and die */
-
-void usage(const char *name)
+int date_compare(time_t *date_1, const time_t *date_2)
 {
-    fprintf(stderr, "usage: %s [-c] directory ...\n", name);
-    exit(1);
+    struct tm *tm1 = malloc(sizeof(struct tm));
+    struct tm *tm2 = malloc(sizeof(struct tm));
+    tm1 = localtime_r(date_1, tm1);
+    tm2 = localtime_r(date_2, tm2);
+
+    int res =
+        tm1->tm_mon - tm2->tm_mon == 0
+            ? (tm1->tm_mday - tm2->tm_mday == 0
+                   ? (tm1->tm_hour - tm2->tm_hour == 0
+                          ? (tm1->tm_min - tm2->tm_min == 0
+                                 ? 0
+                                 : tm1->tm_min - tm2->tm_min)
+                          : tm1->tm_hour - tm2->tm_hour)
+                   : tm1->tm_mday - tm2->tm_mday)
+            : tm1->tm_mon - tm2->tm_mon;
+            
+    free(tm1);
+    free(tm2);
+    return res;
 }
 
-/* main --- call nftw() on each command-line argument */
+void print_info(const char *path, const struct stat *file_stat)
+{
+    char buffer[buff_size];
+    printf((S_ISDIR(file_stat->st_mode)) ? "d" : "-");
+    printf((file_stat->st_mode & S_IRUSR) ? "r" : "-");
+    printf((file_stat->st_mode & S_IWUSR) ? "w" : "-");
+    printf((file_stat->st_mode & S_IXUSR) ? "x" : "-");
+    printf((file_stat->st_mode & S_IRGRP) ? "r" : "-");
+    printf((file_stat->st_mode & S_IWGRP) ? "w" : "-");
+    printf((file_stat->st_mode & S_IXGRP) ? "x" : "-");
+    printf((file_stat->st_mode & S_IROTH) ? "r" : "-");
+    printf((file_stat->st_mode & S_IWOTH) ? "w" : "-");
+    printf((file_stat->st_mode & S_IXOTH) ? "x" : "-");
+
+    printf(" %ld\t", file_stat->st_nlink);
+
+    printf(" %s\t", getpwuid(file_stat->st_uid)->pw_name);
+    printf(" %s\t", getpwuid(file_stat->st_gid)->pw_name);
+
+    printf(" %ld\t", file_stat->st_size);
+
+    strftime(buffer, buff_size, "%b %d %H:%M", localtime(&file_stat->st_mtime));
+    printf(" %s\t", buffer);
+
+    printf(" %s\t", path);
+
+    printf("\n");
+}
+
+int process(const char *path, const struct stat *file_stat, int type_flag, struct FTW *ftw)
+{
+    if (type_flag == FTW_F)
+    {
+        if (strcmp(op, "=") == 0)
+        {
+            date_compare(&date, &file_stat->st_mtime) == 0
+                ? print_info(path, file_stat)
+                : "";
+        }
+        else if (strcmp(op, "<") == 0)
+        {
+            date_compare(&date, &file_stat->st_mtime) > 0
+                ? print_info(path, file_stat)
+                : "";
+        }
+        else if (strcmp(op, ">") == 0)
+        {
+            date_compare(&date, &file_stat->st_mtime) < 0
+                ? print_info(path, file_stat)
+                : "";
+        }
+    }
+    return 0;
+}
 
 int main(int argc, char **argv)
 {
-    int i, c, nfds;
-    int errors = 0;
-    int flags = FTW_PHYS;
-    char start[PATH_MAX], finish[PATH_MAX];
+    char *start_path = argv[1];
+    op = argv[2];
+    char *usr_date = argv[3];
 
-    while ((c = getopt(argc, argv, "c")) != -1)
-    {
-        switch (c)
-        {
-        case 'c':
-            flags |= FTW_CHDIR;
-            break;
-        default:
-            usage(argv[0]);
-            break;
-        }
-    }
+    struct tm *tm = malloc(sizeof(struct tm));
 
-    if (optind == argc)
-        usage(argv[0]);
+    strptime(strcat(usr_date, ":00"), "%b %d %H:%M:%S", tm);
+    date = mktime(tm);
 
-    getcwd(start, sizeof start);
-
-    nfds = getdtablesize() - SPARE_FDS; /* leave some spare descriptors */
-    for (i = optind; i < argc; i++)
-    {
-        if (nftw(argv[i], process, nfds, flags) != 0)
-        {
-            fprintf(stderr, "%s: %s: stopped early\n",
-                    argv[0], argv[i]);
-            errors++;
-        }
-    }
-
-    if ((flags & FTW_CHDIR) != 0)
-    {
-        getcwd(finish, sizeof finish);
-        printf("Starting dir: %s\n", start);
-        printf("Finishing dir: %s\n", finish);
-    }
-
-    return (errors != 0);
-}
-
-/* process --- print out each file at the right level */
-
-int process(const char *file, const struct stat *sb,
-            int flag, struct FTW *s)
-{
-    int retval = 0;
-    const char *name = file + s->base;
-
-    printf("%*s", s->level * 4, ""); /* indent over */
-
-    switch (flag)
-    {
-    case FTW_F:
-        printf("%s (file)\n", name);
-        break;
-    case FTW_D:
-        printf("%s (directory)\n", name);
-        break;
-    case FTW_DNR:
-        printf("%s (unreadable directory)\n", name);
-        break;
-    case FTW_SL:
-        printf("%s (symbolic link)\n", name);
-        break;
-    case FTW_NS:
-        printf("%s (stat failed): %d\n", name, 3);
-        break;
-    case FTW_DP:
-    case FTW_SLN:
-        printf("%s: FTW_DP or FTW_SLN: can't happen!\n", name);
-        retval = 1;
-        break;
-    default:
-        printf("%s: unknown flag %d: can't happen!\n", name, flag);
-        retval = 1;
-        break;
-    }
-
-    return retval;
+    nftw(start_path, process, 100, FTW_PHYS);
+    return (0);
 }
