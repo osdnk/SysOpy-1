@@ -23,15 +23,12 @@ clean:
 	rm -f *.o
 	rm -f *.a
 	rm -f *.so
-
-clean_out:
-		rm -f *.txt
+	rm -f $(MAIN_SRC)
 
 clean_all: clean
-	rm -f $(MAIN_SRC)_dynamic
-	rm -f $(MAIN_SRC)_shared
-	rm -f $(MAIN_SRC)_static
+	rm -f *.txt
+	rm -f *.out
 
 test: compile
-	./main -F test.txt -n 10 -s 128 -C cp_test.txt
-	make clean_all
+	./main -F test.txt -n 1000 -s 512 -C cp_test.txt
+	make clean

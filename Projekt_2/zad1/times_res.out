@@ -1,0 +1,8 @@
+	BLOCK_SIZE: 512 RECORDS_NUMBER: 1000
+
+LIB_VER:
+REAL: 1.288000l  USER: 0.235000l  SYSTEM: 1.034000l    time per operation
+
+SYS_VER:
+REAL: 0.994000l  USER: 0.097000l  SYSTEM: 0.879000l    time per operation
+
