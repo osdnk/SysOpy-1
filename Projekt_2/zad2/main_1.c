@@ -1,5 +1,6 @@
-#define _GNU_SOURCE
+#define _GNU_SOURCE 500
 
+#include <time.h>
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,76 +11,161 @@
 #include <string.h>
 #include <time.h>
 #include <limits.h>
-// #include <grp.h>
+#include <string.h>
 
-static const char default_format[] = " %b %d %H:%M";
+static const char default_format[] = "%b %d %H:%M";
 int const buff_size = 100;
+
+int date_compare(time_t *date_1, time_t *date_2)
+{
+    struct tm *tm1 = malloc(sizeof(struct tm));
+    struct tm *tm2 = malloc(sizeof(struct tm));
+    tm1 = localtime_r(date_1, tm1);
+    tm2 = localtime_r(date_2, tm2);
+
+    return (
+        tm1->tm_mon - tm2->tm_mon == 0
+            ? (tm1->tm_mday - tm2->tm_mday == 0
+                   ? (tm1->tm_hour - tm2->tm_hour == 0
+                          ? (tm1->tm_min - tm2->tm_min == 0
+                                 ? 0
+                                 : tm1->tm_min - tm2->tm_min)
+                          : tm1->tm_hour - tm2->tm_hour)
+                   : tm1->tm_mday - tm2->tm_mday)
+            : tm1->tm_mon - tm2->tm_mon);
+}
+
+void print_info(char *path, struct dirent *rdir, struct stat *file_stat, char *buffer, const char *format)
+{
+    printf((S_ISDIR(file_stat->st_mode)) ? "d" : "-");
+    printf((file_stat->st_mode & S_IRUSR) ? "r" : "-");
+    printf((file_stat->st_mode & S_IWUSR) ? "w" : "-");
+    printf((file_stat->st_mode & S_IXUSR) ? "x" : "-");
+    printf((file_stat->st_mode & S_IRGRP) ? "r" : "-");
+    printf((file_stat->st_mode & S_IWGRP) ? "w" : "-");
+    printf((file_stat->st_mode & S_IXGRP) ? "x" : "-");
+    printf((file_stat->st_mode & S_IROTH) ? "r" : "-");
+    printf((file_stat->st_mode & S_IWOTH) ? "w" : "-");
+    printf((file_stat->st_mode & S_IXOTH) ? "x" : "-");
+
+    printf(" %ld\t", file_stat->st_nlink);
+
+    // printf(" %s\t", getpwuid(file_stat->st_uid)->pw_name);
+    // printf(" %s\t", getpwuid(file_stat->st_gid)->pw_name);
+
+    printf(" %ld\t", file_stat->st_size);
+
+    strftime(buffer, buff_size, format, localtime(&file_stat->st_mtime));
+    printf(" %s\t", buffer);
+
+    printf(" %s\t", realpath(path, buffer));
+
+    printf("\n");
+}
+
+void tree_rusher(char *path, char *op, time_t *date, const char *format, char *buffer)
+{
+    if (path == NULL)
+        return;
+    DIR *dir = opendir(path);
+
+    if (dir == NULL)
+    {
+        return;
+    }
+
+    struct dirent *rdir = readdir(dir);
+    struct stat file_stat;
+
+    char new_path[buff_size];
+
+    while (rdir != NULL)
+    {
+        strcpy(new_path, path);
+        strcat(new_path, "/");
+        strcat(new_path, rdir->d_name);
+
+        stat(new_path, &file_stat);
+
+        if (S_ISLNK(file_stat.st_mode))
+        {
+            rdir = readdir(dir);
+            continue;
+        }
+        else if (strcmp(rdir->d_name, ".") == 0 || strcmp(rdir->d_name, "..") == 0)
+        {
+            rdir = readdir(dir);
+            continue;
+        }
+        else
+        {
+            if (S_ISREG(file_stat.st_mode))
+            {
+                if (strcmp(op, "=") == 0)
+                    date_compare(date, &file_stat.st_mtime) == 0
+                        ? print_info(new_path, rdir, &file_stat, buffer, format)
+                        : "";
+                else if (strcmp(op, "<") == 0)
+                    date_compare(date, &file_stat.st_mtime) > 0
+                        ? print_info(new_path, rdir, &file_stat, buffer, format)
+                        : "";
+                else if (strcmp(op, ">") == 0)
+                    date_compare(date, &file_stat.st_mtime) < 0
+                        ? print_info(new_path, rdir, &file_stat, buffer, format)
+                        : "";
+            }
+
+            if (S_ISDIR(file_stat.st_mode))
+            {
+                tree_rusher(realpath(rdir->d_name, new_path), op, date, format, buffer);
+            }
+            rdir = readdir(dir);
+        }
+    }
+    closedir(dir);
+}
 
 int main(int argc, char **argv)
 {
 
-    if (argc<4){
+    if (argc < 4)
+    {
         printf("need more arguments");
         exit(EXIT_FAILURE);
     }
 
-    char* path = argv[1];
-    char* op = argv[2];
-    char* param_date = argv[3];
+    char *start_path = argv[1];
+    char *op = argv[2];
+    char *usr_date = argv[3];
+
+    char buff[buff_size];
 
     const char *format = default_format;
+    struct tm *tm = malloc(sizeof(struct tm));
+
+    strptime(strcat(usr_date, ":00"), "%b %d %H:%M:%S", tm);
+    time_t date = mktime(tm);
+    tm = localtime(&date);
+
+    // printf("tm_hour:  %d\n", tm->tm_hour);
+    // printf("tm_min:  %d\n", tm->tm_min);
+    // printf("tm_sec:  %d\n", tm->tm_sec);
+    // printf("tm_mon:  %d\n", tm->tm_mon);
+    // printf("tm_mday:  %d\n", tm->tm_mday);
+    // printf("tm_year:  %d\n", tm->tm_year);
+    // printf("tm_yday:  %d\n", tm->tm_yday);
+    // printf("tm_wday:  %d\n", tm->tm_wday);
+
     char buffer[buff_size];
 
-    DIR *dir = opendir(".");
+    DIR *dir = opendir(start_path);
     if (dir == NULL)
     {
         printf("couldnt open the directory\n");
         exit(EXIT_FAILURE);
     }
 
-    struct dirent *rdir = readdir(dir);
-
-    struct stat fileStat;
-
-    while (rdir != NULL)
-    {
-        if (strcmp(rdir->d_name, ".") == 0 || strcmp(rdir->d_name, "..") == 0)
-        {
-            rdir = readdir(dir);
-            continue;
-        }
-        
-        stat(rdir->d_name, &fileStat);
-        if (!S_ISLNK(fileStat.st_mode))
-        {
-            printf((S_ISDIR(fileStat.st_mode)) ? "d" : "-");
-            printf((fileStat.st_mode & S_IRUSR) ? "r" : "-");
-            printf((fileStat.st_mode & S_IWUSR) ? "w" : "-");
-            printf((fileStat.st_mode & S_IXUSR) ? "x" : "-");
-            printf((fileStat.st_mode & S_IRGRP) ? "r" : "-");
-            printf((fileStat.st_mode & S_IWGRP) ? "w" : "-");
-            printf((fileStat.st_mode & S_IXGRP) ? "x" : "-");
-            printf((fileStat.st_mode & S_IROTH) ? "r" : "-");
-            printf((fileStat.st_mode & S_IWOTH) ? "w" : "-");
-            printf((fileStat.st_mode & S_IXOTH) ? "x" : "-");
-
-            printf(" %ld\t", fileStat.st_nlink);
-
-            printf(" %s\t", getpwuid(fileStat.st_uid)->pw_name);
-            printf(" %s\t", getpwuid(fileStat.st_gid)->pw_name);
-
-            printf(" %ld\t", fileStat.st_size);
-
-            strftime(buffer, buff_size, format, localtime(&fileStat.st_mtime));
-            printf(" %s\t", buffer);
-
-            realpath(rdir->d_name, buffer);
-            printf(" %s\t", buffer);
-
-            printf("\n");
-        }
-        rdir = readdir(dir);
-    }
+    tree_rusher(realpath(start_path, buff), op, &date, format, buffer);
 
     closedir(dir);
     return 0;
