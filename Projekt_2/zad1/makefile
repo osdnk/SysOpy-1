@@ -24,11 +24,83 @@ clean:
 	rm -f *.a
 	rm -f *.so
 	rm -f $(MAIN_SRC)
-
-clean_all: clean
 	rm -f *.txt
+	
+clean_all: clean
 	rm -f *.out
 
 test: compile
-	./main -F test.txt -n 1000 -s 512 -C cp_test.txt
+	./main -F test.txt -n 10000000 -s 4 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 10000000 -s 4 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 10000000 -s 4 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 30000000 -s 4 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 30000000 -s 4 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 30000000 -s 4 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 1000000 -s 512 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 1000000 -s 512 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 1000000 -s 512 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 3000000 -s 512 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 3000000 -s 512 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 3000000 -s 512 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 100000 -s 4096 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 100000 -s 4096 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 100000 -s 4096 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 300000 -s 4096 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 300000 -s 4096 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 300000 -s 4096 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 100000 -s 8192 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 100000 -s 8192 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 100000 -s 8192 -C cp_test_s.txt -t sys -o copy
+
+	./main -F test.txt -n 300000 -s 8192 -C cp_test.txt -t lib -o generate
+	./main -F test.txt -n 300000 -s 8192 -C cp_test.txt -t lib -o copy
+	./main -F test.txt -n 300000 -s 8192 -C cp_test_s.txt -t sys -o copy
+
+
+	./main -F test.txt -n 1000 -s 4 -t lib -o generate
+	./main -F test.txt -n 1000 -s 4 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 1000 -s 4 -t sys -o sort
+	./main -F test.txt -n 1000 -s 4 -t lib -o sort
+
+	./main -F test.txt -n 5000 -s 4 -t lib -o generate
+	./main -F test.txt -n 5000 -s 4 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 5000 -s 4 -t sys -o sort
+	./main -F cp_test.txt -n 5000 -s 4 -t lib -o sort
+
+	./main -F test.txt -n 1000 -s 512 -t lib -o generate
+	./main -F test.txt -n 1000 -s 512 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 1000 -s 512 -t sys -o sort
+	./main -F cp_test.txt -n 1000 -s 512 -t lib -o sort
+
+	./main -F test.txt -n 5000 -s 512 -t lib -o generate
+	./main -F test.txt -n 5000 -s 512 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 5000 -s 512 -t sys -o sort
+	./main -F cp_test.txt -n 5000 -s 512 -t lib -o sort
+
+	./main -F test.txt -n 1000 -s 4096 -t lib -o generate
+	./main -F test.txt -n 1000 -s 4096 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 1000 -s 4096 -t sys -o sort
+	./main -F cp_test.txt -n 1000 -s 4096 -t lib -o sort
+
+	./main -F test.txt -n 5000 -s 4096 -t lib -o generate
+	./main -F test.txt -n 5000 -s 4096 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 5000 -s 4096 -t sys -o sort
+	./main -F cp_test.txt -n 5000 -s 4096 -t lib -o sort
+
+	./main -F test.txt -n 1000 -s 8192 -t lib -o generate
+	./main -F test.txt -n 1000 -s 8192 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 1000 -s 8192 -t sys -o sort
+	./main -F cp_test.txt -n 1000 -s 8192 -t lib -o sort
+
+	./main -F test.txt -n 5000 -s 8192 -t lib -o generate
+	./main -F test.txt -n 5000 -s 8192 -t lib -C cp_test.txt -o copy
+	./main -F test.txt -n 5000 -s 8192 -t sys -o sort
+	./main -F cp_test.txt -n 5000 -s 8192 -t lib -o sort
+
 	make clean

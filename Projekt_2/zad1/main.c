@@ -10,27 +10,31 @@
 #include <sys/times.h>
 #include <sys/resource.h>
 
-const int itrs = 10;
-#define ops 4
+#define ops 2
 
-double time_diff(clock_t t1, clock_t t2)
+double time_val(struct timeval *time)
 {
-    return (double)(t2 - t1) / sysconf(_SC_CLK_TCK) / itrs;
+    return (double)(time->tv_sec * 1000000.0 + time->tv_usec) / 1000000.0;
 }
 
-void print_times(clock_t real_start, struct tms *time_start, clock_t real_end, struct tms *time_end, char *message, FILE *fp)
+void print_times(struct timeval *real_start, struct rusage *time_start, struct timeval *real_end,
+                 struct rusage *time_end, char *message, FILE *fp)
 {
+    double real = time_val(real_end) - time_val(real_start);
+    double sys = time_val(&time_end->ru_utime) - time_val(&time_start->ru_utime);
+    double usr = time_val(&time_end->ru_stime) - time_val(&time_start->ru_stime);
+
     printf("%s\n", message);
-    printf("REAL: %fl   ", time_diff(real_start, real_end));
-    printf("USER: %fl   ", time_diff(time_start->tms_utime, time_end->tms_utime));
-    printf("SYSTEM: %fl     ", time_diff(time_start->tms_stime, time_end->tms_stime));
-    printf("time per operation\n\n");
+    printf("REAL: %lf   ", real);
+    printf("USER: %lf   ", usr);
+    printf("SYSTEM: %lf     ", sys);
+    printf("\n\n");
 
     fprintf(fp, "%s\n", message);
-    fprintf(fp, "REAL: %fl  ", time_diff(real_start, real_end));
-    fprintf(fp, "USER: %fl  ", time_diff(time_start->tms_utime, time_end->tms_utime));
-    fprintf(fp, "SYSTEM: %fl    ", time_diff(time_start->tms_stime, time_end->tms_stime));
-    fprintf(fp, "time per operation\n\n");
+    fprintf(fp, "REAL: %lf  ", real);
+    fprintf(fp, "USER: %lf  ", usr);
+    fprintf(fp, "SYSTEM: %lf    ", sys);
+    fprintf(fp, "\n");
 }
 
 int main(int argc, char **argv)
@@ -38,6 +42,8 @@ int main(int argc, char **argv)
 
     char *file_path;
     char *cp_to_path;
+    char *op;
+    char *type;
     int counter, block_size = 0, records_number = 0;
     while (1)
     {
@@ -47,11 +53,13 @@ int main(int argc, char **argv)
                 {"path", required_argument, 0, 'P'},
                 {"block_size", required_argument, 0, 's'},
                 {"records_number", required_argument, 0, 'n'},
+                {"operation", required_argument, 0, 'o'},
+                {"type", required_argument, 0, 't'},
                 {0, 0, 0, 0}};
 
         int option_index = 0;
 
-        counter = getopt_long(argc, argv, ":F:n:s:C:",
+        counter = getopt_long(argc, argv, ":F:n:s:C:o:t:",
                               long_options, &option_index);
 
         if (counter == -1)
@@ -78,6 +86,14 @@ int main(int argc, char **argv)
             cp_to_path = optarg;
             break;
 
+        case 'o':
+            op = optarg;
+            break;
+
+        case 't':
+            type = optarg;
+            break;
+
         case '?':
             printf("very helpfull info");
             break;
@@ -87,13 +103,10 @@ int main(int argc, char **argv)
         }
     }
 
-    FILE *fp = fopen("times_res.out", "w+");
+    FILE *fp = fopen("wyniki.out", "a");
 
-    clock_t time_arr[ops] = {0, 0, 0, 0};
-    struct tms *tms_arr[ops];
-
-    for (int i = 0; i < ops; i++)
-        tms_arr[i] = calloc(1, sizeof(struct tms *));
+    struct rusage usage_time[ops];
+    struct timeval real_time[ops];
 
     char **messages = calloc(ops, sizeof(char *));
     for (int i = 0; i < ops; i++)
@@ -102,68 +115,78 @@ int main(int argc, char **argv)
     int current_time = 0;
     int curretn_message = 0;
 
-    time_arr[current_time] = times(tms_arr[current_time]);
+    int int_type;
+
+    if (strcmp(type, "sys") == 0)
+    {
+        int_type = 0;
+    }
+    else if (strcmp(type, "lib") == 0)
+    {
+        int_type = 1;
+    }
+    else
+    {
+        printf("invalid operation type\n");
+        exit(EXIT_FAILURE);
+    }
+
+    getrusage(RUSAGE_SELF, &usage_time[current_time]);
+    gettimeofday(&real_time[current_time], 0);
     current_time += 1;
 
-    strcpy(messages[curretn_message], "LIB_VER:");
-    curretn_message += 2;
-    for (int i = 0; i < itrs; i++)
+    int generate__ = 0;
+
+    if (strcmp(op, "generate") == 0 && file_path && records_number && block_size)
     {
-        // printf("%d\n",i);
-        if (file_path && records_number && block_size)
-        {
+        strcpy(messages[curretn_message], "GENERATE");
+        curretn_message += 2;
+        generate__ = 1;
+
+        if (int_type)
             lib_generate_file(file_path, records_number, block_size);
-            // sys_generate_file(file_path, records_number, block_size);
-        }
-        if (file_path && cp_to_path && records_number && block_size)
-        {
-            lib_copy_file(file_path, cp_to_path, records_number, block_size);
-            // sys_copy_file(file_path, cp_to_path, records_number, block_size);
-        }
-        if (file_path && records_number && block_size)
-        {
-            lib_sort_file(file_path, records_number, block_size);
-            // sys_sort_file(file_path, records_number, block_size);
-        }
-    }
-
-    time_arr[current_time] = times(tms_arr[current_time]);
-    current_time += 1;
-
-    strcpy(messages[curretn_message], "SYS_VER:");
-    curretn_message += 2;
-
-    time_arr[current_time] = times(tms_arr[current_time]);
-    current_time += 1;
-
-    for (int i = 0; i < itrs; i++)
-    {
-        // printf("%d\n",i);
-        if (file_path && records_number && block_size)
-        {
-            // lib_generate_file(file_path, records_number, block_size);
+        else
             sys_generate_file(file_path, records_number, block_size);
-        }
-        if (file_path && cp_to_path && records_number && block_size)
-        {
-            // lib_copy_file(file_path, cp_to_path, records_number, block_size);
+    }
+    if (strcmp(op, "copy") == 0 && file_path && cp_to_path && records_number && block_size)
+    {
+        strcpy(messages[curretn_message], "COPY");
+        curretn_message += 2;
+
+        if (int_type)
+            lib_copy_file(file_path, cp_to_path, records_number, block_size);
+        else
             sys_copy_file(file_path, cp_to_path, records_number, block_size);
-        }
-        if (file_path && records_number && block_size)
-        {
-            // lib_sort_file(file_path, records_number, block_size);
+    }
+    if (strcmp(op, "sort") == 0 && file_path && cp_to_path && records_number && block_size)
+    {
+        strcpy(messages[curretn_message], "SORT");
+        curretn_message += 2;
+
+        if (int_type)
+            lib_sort_file(file_path, records_number, block_size);
+        else
             sys_sort_file(file_path, records_number, block_size);
-        }
     }
 
-    time_arr[current_time] = times(tms_arr[current_time]);
+    getrusage(RUSAGE_SELF, &usage_time[current_time]);
+    gettimeofday(&real_time[current_time], 0);
     current_time += 1;
+    if (!generate__)
+    {
+        fprintf(fp, "+++++++++++++++++++++++++++\n");
+        if (int_type)
+            fprintf(fp, "LIB_VER:\n");
+        else
+            fprintf(fp, "SYS_VER:\n");
+        fprintf(fp, "\tBLOCK_SIZE: %d RECORDS_NUMBER: %d\n", block_size, records_number);
+        print_times(&real_time[0], &usage_time[0], &real_time[1], &usage_time[1], messages[0], fp);
+        fclose(fp);
+    }
 
-    fprintf(fp, "\tBLOCK_SIZE: %d RECORDS_NUMBER: %d\n\n", block_size, records_number);
+    for (int i = 0; i < ops; i++)
+        free(messages[i]);
 
-    for (int i = 0; i < ops; i += 2)
-        print_times(time_arr[i], tms_arr[i], time_arr[i + 1], tms_arr[i + 1], messages[i], fp);
-
-    fclose(fp);
+    free(messages);
     return 0;
 }
