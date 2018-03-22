@@ -84,7 +84,7 @@ void tree_rusher(char *path, char *op, time_t *date, const char *format, char *b
         strcat(new_path, "/");
         strcat(new_path, rdir->d_name);
 
-        stat(new_path, &file_stat);
+        lstat(new_path, &file_stat);
 
         if (S_ISLNK(file_stat.st_mode))
         {
