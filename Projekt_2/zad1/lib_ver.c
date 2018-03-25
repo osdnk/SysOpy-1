@@ -42,21 +42,21 @@ void lib_sort_file(char *path, int records_number, int block_size)
     {
         fseek(file, i * offset, 0);
 
-        if (fread(record_0, sizeof(char), (size_t)block_size, file) != block_size)
+        if (fread(record_0, sizeof(char), block_size, file) != block_size)
             return;
 
         for (j = i - 1; j >= 0; j--)
         {
             fseek(file, j * offset, 0);
-            if (fread(record_1, sizeof(char), (size_t)block_size, file) != block_size)
+            if (fread(record_1, sizeof(char), block_size, file) != block_size)
                 return;
             if (record_0[0] >= record_1[0])
                 break;
-            if (fwrite(record_1, sizeof(char), (size_t)block_size, file) != block_size)
+            if (fwrite(record_1, sizeof(char), block_size, file) != block_size)
                 return;
         }
         fseek(file, (j + 1) * offset, 0);
-        if (fwrite(record_0, sizeof(char), (size_t)block_size, file) != block_size)
+        if (fwrite(record_0, sizeof(char), block_size, file) != block_size)
             return;
     }
 

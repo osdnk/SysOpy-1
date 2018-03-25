@@ -41,21 +41,21 @@ void sys_sort_file(char *path, int records_number, int block_size)
     {
         lseek(fp, i * offset, 0);
 
-        if (read(fp, record_0, sizeof(char) * (size_t)block_size) == 0)
+        if (read(fp, record_0, sizeof(char) * block_size) == 0)
             return;
 
         for (j = i - 1; j >= 0; j--)
         {
             lseek(fp, j * offset, 0);
-            if (read(fp, record_1, sizeof(char) * (size_t)block_size) == 0)
+            if (read(fp, record_1, sizeof(char) * block_size) == 0)
                 return;
             if (record_0[0] >= record_1[0])
                 break;
-            if (write(fp, record_1, sizeof(char) * (size_t)block_size) == 0)
+            if (write(fp, record_1, sizeof(char) * (block_size)) == 0)
                 return;
         }
         lseek(fp, (j + 1) * offset, 0);
-        if (write(fp, record_0, sizeof(char) * (size_t)block_size) == 0)
+        if (write(fp, record_0, sizeof(char) * block_size) == 0)
             return;
     }
 
