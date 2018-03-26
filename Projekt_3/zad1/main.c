@@ -117,7 +117,7 @@ void tree_rusher(char *path, char *op, time_t *date, const char *format, char *b
             if (S_ISDIR(file_stat.st_mode))
             {
                 pid_t pid = fork();
-                if (pid != 0)
+                if (pid == 0)
                 {
                     tree_rusher(realpath(rdir->d_name, new_path), op, date, format, buffer);
                     exit(EXIT_SUCCESS);
