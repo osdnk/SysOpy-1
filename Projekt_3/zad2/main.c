@@ -15,7 +15,13 @@ void parse_args(char *buff, char **args) {
 }
 
 int main(int argc, char **argv) {
-  FILE *fp = fopen("programs.txt", "r");
+  if (argc < 2) {
+    printf("no enough arguments");
+    exit(EXIT_FAILURE);
+  }
+  
+  char *file = argv[1];
+  FILE *fp = fopen(file, "r");
   char buff[255];
   char *args[255];
   int status = 0;
