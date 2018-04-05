@@ -1,12 +1,3 @@
-
-# Ignore all
-*
-
-# Unignore all with extensions
-!*.*
-
-# Unignore all dirs
-!*/
 CMakeFiles/*
 .vscode/*
 build/*
@@ -15,4 +6,3 @@ CMakeCache.txt
 CMakeLists.txt
 cmake_install.cmake
 cmakefiel
-
