@@ -1,11 +1,4 @@
-CMakeFiles/*
-.vscode/*
-build/*
-.gitignore
-CMakeCache.txt
-CMakeLists.txt
-cmake_install.cmake
-cmakefiel
+
 # Ignore all
 *
 
@@ -14,3 +7,12 @@ cmakefiel
 
 # Unignore all dirs
 !*/
+CMakeFiles/*
+.vscode/*
+build/*
+.gitignore
+CMakeCache.txt
+CMakeLists.txt
+cmake_install.cmake
+cmakefiel
+
