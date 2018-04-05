@@ -7,17 +7,13 @@
 
 int yay = 0;
 
-void signal_handler() {
-    struct sigaction act;
-    act.sa_handler = signal_handler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
+void signal_handler(int num) {
     if(yay == 0)
         printf("\nOczekuję na CTRL+Z - kontynuacja albo CTR+C - zakonczenie programu\n");
     yay = yay == 1 ? 0 : 1;
 }
 
-void init_signal() {
+void init_signal(int num) {
     printf("\nOdebrano sygnał SIGINT\n");
     exit(EXIT_SUCCESS);
 }
@@ -28,12 +24,14 @@ int main(int argc, char** argv) {
     char buff[128];
     struct sigaction act;
     act.sa_handler = signal_handler;
-    sigemptyset(&act.sa_mask);
+    sigfillset(&act.sa_mask);
+    sigdelset(&act.sa_mask, SIGINT);
     act.sa_flags = 0;
 
     while(1){
         sigaction(SIGTSTP, &act,NULL);
         signal(SIGINT,init_signal);
+
 
         if(yay)
             continue;

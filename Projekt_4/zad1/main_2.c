@@ -10,18 +10,17 @@ int yay = 0;
 int yay_2 = 0;
 pid_t pid = 0;
 
-void signal_handler() {
-    struct sigaction act;
-    act.sa_handler = signal_handler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
+void signal_handler(int num) {
     if(yay == 0)
         printf("\nOczekuję na CTRL+Z - kontynuacja albo CTR+C - zakonczenie programu\n");
     yay = yay == 1 ? 0 : 1;
 }
 
-void init_signal() {
+void init_signal(int num) {
     printf("\nOdebrano sygnał SIGINt\n");
+    if(yay_2 == 0)
+        kill(pid, SIGKILL);
+
     exit(EXIT_SUCCESS);
 }
 

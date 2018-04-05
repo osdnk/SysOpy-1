@@ -1,0 +1,16 @@
+CMakeFiles/*
+.vscode/*
+build/*
+.gitignore
+CMakeCache.txt
+CMakeLists.txt
+cmake_install.cmake
+cmakefiel
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
