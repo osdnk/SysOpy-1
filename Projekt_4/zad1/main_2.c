@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
 
     struct sigaction act;
     act.sa_handler = signal_handler;
-    sigemptyset(&act.sa_mask);
+    sigfillset(&act.sa_mask);
+    sigdelset(&act.sa_mask, SIGINT);
     act.sa_flags = 0;
 
     pid = fork();
