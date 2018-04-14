@@ -34,7 +34,7 @@ int parse_programs(char *buff, char **programs) {
   return i - 1;
 }
 
-int forker(char **programs, int i, int prog_num) {
+int forker(char **programs, int i) {
   int status = 0;
   int fd[2] = {0, 0};
   char *args[255];
@@ -53,10 +53,10 @@ int forker(char **programs, int i, int prog_num) {
     close(fd[0]);
     dup2(fd[1], STDOUT_FILENO);
 
-    if (i + 2 < prog_num)
-      child_exit_val = forker(programs, i + 1, prog_num);
-    else {
-      i += 1;
+    if (i - 1  > 0)
+      child_exit_val = forker(programs, i - 1);
+    else if(i > 0){
+      i -= 1;
       parse_args(programs[i], args);
       WRITE_MSG("starting new process %s on pid %d parent pid: %d\n", args[0],
                 getpid(), getppid());
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     proc_num = parse_programs(buff, programs);
     pid_t pid = fork();
     if (pid == 0)
-      forker(programs, 0, proc_num);
+      forker(programs, proc_num - 1);
     else {
       WRITE_MSG("waiting for %d\n", pid);
       if (waitpid(pid, &status, 0) == -1) {
