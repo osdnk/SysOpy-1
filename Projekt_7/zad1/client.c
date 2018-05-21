@@ -1,4 +1,3 @@
-
 #include "props.h"
 
 state get_barber_state();
@@ -33,7 +32,7 @@ int main(int argc, char **argv) {
     semop(sem_set_id, &client_things, 1);
     fprintf(stderr, "clinet: %d: entered the shop\n", getpid());
 
-    block_critical_frame(&client_things,sem_set_id);
+    block_critical_frame(&client_things, sem_set_id);
 
     if (shp_state->barber_state == BARBER_SLEEPING) {
       fprintf(stderr, "clinet: %d: meeting sleeping barber\n", getpid());
@@ -42,6 +41,7 @@ int main(int argc, char **argv) {
 
       client_data client;
       client.pid = getpid();
+      client.enter_time = get_time();
       shp_state->chair = client;
 
       client_things.sem_num = 0;  // barber semaphore
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
       fprintf(stderr, "clinet: %d: aweking barber\n", getpid());
       semop(sem_set_id, &client_things, 1);
       shp_state->barber_state = BARBER_AWAKEN;
-      unblock_critical_frame(&client_things,sem_set_id);
+      unblock_critical_frame(&client_things, sem_set_id);
 
       client_things.sem_num = 2;
       client_things.sem_op = -1;
@@ -67,15 +67,16 @@ int main(int argc, char **argv) {
               shp_state->end);
       // move end of the queue by one
       int end = shp_state->end;
-      client_data current;
-      current.pid = getpid();
-      shp_state->shop_queue[end] = current;
+      client_data client;
+      client.pid = getpid();
+      client.enter_time = get_time();
+      shp_state->shop_queue[end] = client;
       // add queued client
       shp_state->queued_clients += 1;
       shp_state->end = (end + 1) % shp_state->lenght;
 
       // unblock frame
-      unblock_critical_frame(&client_things,sem_set_id);
+      unblock_critical_frame(&client_things, sem_set_id);
 
       // block client in the queue
       client_things.sem_op = -1;
@@ -84,8 +85,6 @@ int main(int argc, char **argv) {
 
       fprintf(stderr, "clinet: %d sitting on the chair\n", getpid());
 
-      client_data client;
-      client.pid = getpid();
       shp_state->chair = client;
 
       client_things.sem_op = -1;
@@ -120,4 +119,3 @@ void init_memory() {
   }
   shp_state = (shop_state *)queue_addres;
 }
-

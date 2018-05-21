@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   init_semaphores();
   init_memory();
 
-  while (shp_state->is_barber_open) { 
+  while (shp_state->is_barber_open) {
     block_critical_frame(&barber_actions, sem_set_id);
     if (shp_state->queued_clients > 0) {
       fprintf(stderr, "currently in queue: %d\n", shp_state->queued_clients);
@@ -89,7 +89,8 @@ void barb_client() {
   cls.sem_num = 2;
   cls.sem_op = 1;
   if (semop(sem_set_id, &cls, 1) == -1) exit(1);
-  fprintf(stderr, "barbed client: %d\n", client.pid);
+  fprintf(stderr, "barbed client: %d, queue enter time: %ld\n", client.pid,
+          client.enter_time);
 
   cls.sem_num = 1;
   semop(sem_set_id, &cls, 1);
@@ -118,7 +119,7 @@ void init_memory() {
   }
   shp_state = (shop_state *)queue_addres;
 
-  client_data client = {-1};
+  client_data client = {-1, -1};
 
   shp_state->is_barber_open = 1;
   shp_state->barber_state = BARBER_AWAKEN;
