@@ -1,4 +1,4 @@
-#define _DEFAULT_SOURCE
+#define _XOPEN_SOURCE
 #include "props.h"
 
 void sig_term_handler(int);
