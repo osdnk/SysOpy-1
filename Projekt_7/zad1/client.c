@@ -1,10 +1,7 @@
 #include "props.h"
 
-state get_barber_state();
 void init_semaphores();
 void init_memory();
-void block_critical_frame();
-void unblock_critical_frame();
 
 int shmemory_id;
 int sem_set_id;

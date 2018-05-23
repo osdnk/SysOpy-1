@@ -31,7 +31,6 @@ typedef struct shop_state {
   int begin;
   int end;
   char sem_set_names[1028][32];
-  sem_t* sem_set_addreses[1028];
   state barber_state;
   int is_barber_open;
   int total_sem_count;

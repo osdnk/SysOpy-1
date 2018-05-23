@@ -1,10 +1,8 @@
 #include "props.h"
 
 void sig_term_handler(int);
-int is_queue_empty();
 client_data get_client_from_the_queue();
 void barb_client();
-void update_state();
 void init_semaphores();
 void init_memory();
 void clean_up(void);
@@ -32,7 +30,6 @@ int main(int argc, char **argv) {
   while (shp_state->is_barber_open) {
     block_critical_frame(&barber_actions, sem_set_id);
     if (shp_state->queued_clients > 0) {
-      fprintf(stderr, "currently in queue: %d\n", shp_state->queued_clients);
       semctl(sem_set_id, 0, SETVAL, shp_state->queued_clients);
     } else if (shp_state->barber_state != BARBER_SLEEPING &&
                semctl(sem_set_id, 0, GETVAL) == 0) {
@@ -57,16 +54,17 @@ int main(int argc, char **argv) {
 }
 
 client_data get_client_from_the_queue() {
+  fprintf(stderr, "get client form: %d\n", shp_state->begin);
+  block_critical_frame(&barber_actions, sem_set_id);
+  client_data client = shp_state->shop_queue[shp_state->begin];
+  shp_state->begin = (shp_state->begin + 1) % shp_state->lenght;
+  shp_state->queued_clients -= 1;
+  unblock_critical_frame(&barber_actions, sem_set_id);
+  
   struct sembuf cls;
   cls.sem_num = shp_state->begin + base_sem_count;
   cls.sem_op = 1;
   cls.sem_flg = 0;
-
-  fprintf(stderr, "get client form: %d\n", shp_state->begin);
-
-  client_data client = shp_state->shop_queue[shp_state->begin];
-  shp_state->begin = (shp_state->begin + 1) % shp_state->lenght;
-  shp_state->queued_clients -= 1;
 
   semop(sem_set_id, &cls, 1);
   return client;

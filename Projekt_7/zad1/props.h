@@ -23,12 +23,9 @@ union semun {
   unsigned short *array;
 };
 
-typedef enum who { BARBER, CLINET } who;
-
 typedef enum state {
   BARBER_SLEEPING = 0,
   BARBER_AWAKEN = 1,
-  CLIENT_BEING_BARBED = 2
 } state;
 
 typedef struct client_data {
