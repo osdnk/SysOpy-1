@@ -1,4 +1,4 @@
-CC = /usr/bin/gcc-6
+CC = gcc
 CFLAGS = -g -O0 -std=c11 -static -Wall -Isrc -rdynamic -fomit-frame-pointer
 all: barber client spawner
 
