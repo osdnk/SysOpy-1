@@ -6,6 +6,7 @@ compile:
 	$(CC) $(CFLAGS) main.c -o main -lm -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 
 test:
+	# valgrind -v --track-origins=yes --keep-stacktraces=alloc-and-free
 	./main 2 "./totem.pgm" "./filter.txt" "./out.pgm"
 
 clean: $(patsubst %.c, %.clean, $(wildcard *.c))

@@ -4,9 +4,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/times.h>
+#include <zconf.h>
 
 const int buff_size = 1024;
 
+typedef struct transform_props {
+  int begin;
+  int end;
+  int width;
+  int heigth;
+  int filter_size;
+  int **pict_matrix;
+  double **filter_matrix;
+  int **out_pict_matrix;
+} transform_props;
+
+void save_time_res(clock_t r_time[2], struct tms tms_time[2], int threads,
+                   int width, int heigth, int filter_size);
+void *wrapped_apply(void *);
 void load_matrix(char *buff, int **out_matrix, FILE *fp, int height, int width);
 void free_matrix(int width, int heigth, int **matrix);
 int **allocate_matrix(int width, int heigth);
@@ -26,10 +42,17 @@ int main(int argc, char **argv) {
     exit(3);
   };
   char buff[buff_size];
+  int threads;
   char *token, *string;
   int **pict_matrix;
   double **filter_matrix;
   int **out_pict_matrix;
+
+  clock_t r_time[2] = {0, 0};
+  struct tms tms_time[2];
+
+  threads = strtol(argv[1], NULL, 10);
+
   FILE *fp_in_pict = fopen(argv[2], "r+");
   FILE *fp_filter = fopen(argv[3], "r+");
   FILE *fp_out_pict = fopen(argv[4], "w+");
@@ -71,11 +94,34 @@ int main(int argc, char **argv) {
 
   load_matrix_(buff, filter_matrix, fp_filter, filter_size, filter_size);
 
-  apply_filter(0, width, width, heigth, filter_size, pict_matrix, filter_matrix,
-               out_pict_matrix);
+  pthread_t *thread = calloc(threads, sizeof(pthread_t));
+  transform_props **props_table = malloc(threads * sizeof(transform_props *));
 
-  /*important stuff*/
+  r_time[0] = times(&tms_time[0]);
+
+  for (int i = 0; i < threads; i++) {
+    props_table[i] = malloc(sizeof(transform_props));
+    props_table[i]->begin = i * width / threads;
+    props_table[i]->end = (i + 1) * width / threads;
+    props_table[i]->width = width;
+    props_table[i]->heigth = heigth;
+    props_table[i]->filter_size = filter_size;
+    props_table[i]->pict_matrix = pict_matrix;
+    props_table[i]->filter_matrix = filter_matrix;
+    props_table[i]->out_pict_matrix = out_pict_matrix;
+    pthread_create(&thread[i], NULL, wrapped_apply, (void *)props_table[i]);
+  }
+
+  for (int i = 0; i < threads; i++) {
+    pthread_join(thread[i], NULL);
+    free(props_table[i]);
+  }
+  free(props_table);
+
+  r_time[1] = times(&tms_time[1]);
+
   save_picture(width, heigth, out_pict_matrix, fp_out_pict);
+  save_time_res(r_time, tms_time, threads, width, heigth, filter_size);
 
   free_matrix(width, heigth, pict_matrix);
   free_matrix(width, heigth, out_pict_matrix);
@@ -84,6 +130,15 @@ int main(int argc, char **argv) {
   fclose(fp_in_pict);
   fclose(fp_out_pict);
   fclose(fp_filter);
+}
+
+void *wrapped_apply(void *props) {
+  transform_props *unwrp_props = (transform_props *)props;
+  apply_filter(unwrp_props->begin, unwrp_props->end, unwrp_props->width,
+               unwrp_props->heigth, unwrp_props->filter_size,
+               unwrp_props->pict_matrix, unwrp_props->filter_matrix,
+               unwrp_props->out_pict_matrix);
+  return (void *)0;
 }
 
 void apply_filter(int begin, int end, int width, int heigth, int c,
@@ -110,7 +165,7 @@ int calc_pixel(int x, int y, int width, int heigth, int c, int **I,
     }
   }
   pixel_val = pixel_val < 0 ? 0 : pixel_val;
-  printf("pixel val: %lf\n", pixel_val);
+  //  printf("pixel val: %lf\n", pixel_val);
   return round(pixel_val);
 }
 
@@ -189,4 +244,23 @@ void load_matrix_(char *buff, double **out_matrix, FILE *fp, int heigth,
       j = (j < width) ? j : 0;
     }
   }
+}
+
+double time_diff(clock_t start, clock_t end) {
+    return (double) (end - start) / sysconf(_SC_CLK_TCK);
+}
+
+void save_time_res(clock_t r_time[2], struct tms tms_time[2], int threads,
+                   int width, int heigth, int filter_size) {
+  FILE *fp = fopen("time_res.txt", "a");
+  fprintf(fp, "Number of Threads: %d\n", threads);
+  fprintf(fp, "Picture size: %dx%d\n", width, heigth);
+  fprintf(fp, "Filter size: %dx%d\n", filter_size, filter_size);
+  fprintf(fp, "Real:   %.2lf s   ", time_diff(r_time[0], r_time[1]));
+  fprintf(fp, "User:   %.2lf s   ",
+          time_diff(tms_time[0].tms_utime, tms_time[1].tms_utime));
+  fprintf(fp, "System: %.2lf s\n",
+          time_diff(tms_time[0].tms_stime, tms_time[1].tms_stime));
+  fprintf(fp, "\n\n");
+  fclose(fp);
 }
