@@ -165,7 +165,7 @@ int calc_pixel(int x, int y, int width, int heigth, int c, int **I,
     }
   }
   pixel_val = pixel_val < 0 ? 0 : pixel_val;
-  //  printf("pixel val: %lf\n", pixel_val);
+  printf("pixel val: %lf\n", pixel_val);
   return round(pixel_val);
 }
 

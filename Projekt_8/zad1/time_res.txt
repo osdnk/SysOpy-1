@@ -1,0 +1,36 @@
+Number of Threads: 1
+Picture size: 640x480
+Filter size: 3x3
+Real:   1.51 s   User:   0.36 s   System: 0.60 s
+
+
+Number of Threads: 2
+Picture size: 640x480
+Filter size: 3x3
+Real:   1.80 s   User:   0.63 s   System: 1.06 s
+
+
+Number of Threads: 4
+Picture size: 640x480
+Filter size: 3x3
+Real:   1.73 s   User:   0.53 s   System: 1.01 s
+
+
+Number of Threads: 1
+Picture size: 640x480
+Filter size: 32x32
+Real:   7.20 s   User:   6.66 s   System: 0.52 s
+
+
+Number of Threads: 2
+Picture size: 640x480
+Filter size: 32x32
+Real:   4.16 s   User:   7.27 s   System: 0.68 s
+
+
+Number of Threads: 4
+Picture size: 640x480
+Filter size: 32x32
+Real:   3.72 s   User:   7.28 s   System: 0.92 s
+
+

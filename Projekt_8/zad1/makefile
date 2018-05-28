@@ -7,7 +7,12 @@ compile:
 
 test:
 	# valgrind -v --track-origins=yes --keep-stacktraces=alloc-and-free
-	./main 2 "./totem.pgm" "./filter.txt" "./out.pgm"
+	./main 1 "./totem.pgm" "./edge_detection.txt" "./out_e1.pgm"
+	./main 2 "./totem.pgm" "./edge_detection.txt" "./out_e2.pgm"
+	./main 4 "./totem.pgm" "./edge_detection.txt" "./out_e3.pgm"
+	./main 1 "./totem.pgm" "./32_32_filter.txt" "./out_1.pgm"
+	./main 2 "./totem.pgm" "./32_32_filter.txt" "./out_2.pgm"
+	./main 4 "./totem.pgm" "./32_32_filter.txt" "./out_4.pgm"
 
 clean: $(patsubst %.c, %.clean, $(wildcard *.c))
 
